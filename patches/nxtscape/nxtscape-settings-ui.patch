@@ -34,12 +34,17 @@ index c27e0e96e4bce..1869a54c5b4e4 100644
 +  // Nxtscape provider settings
 +  (*s_allowlist)["nxtscape.nxtscape_model"] = settings_api::PrefType::kString;
 +  
-+  // OpenAI provider settings
-+  (*s_allowlist)["nxtscape.openai_api_key"] = settings_api::PrefType::kString;
-+  (*s_allowlist)["nxtscape.openai_model"] = settings_api::PrefType::kString;
-+  (*s_allowlist)["nxtscape.openai_base_url"] = settings_api::PrefType::kString;
-+
-+  // Anthropic provider settings
+ +  // OpenAI provider settings
+ +  (*s_allowlist)["nxtscape.openai_api_key"] = settings_api::PrefType::kString;
+ +  (*s_allowlist)["nxtscape.openai_model"] = settings_api::PrefType::kString;
+ +  (*s_allowlist)["nxtscape.openai_base_url"] = settings_api::PrefType::kString;
+ +
+ +  // Generic OpenAI provider settings
+ +  (*s_allowlist)["nxtscape.generic_openai_api_key"] = settings_api::PrefType::kString;
+ +  (*s_allowlist)["nxtscape.generic_openai_base_url"] = settings_api::PrefType::kString;
+ +  (*s_allowlist)["nxtscape.generic_openai_model"] = settings_api::PrefType::kString;
+ +
+ +  // Anthropic provider settings
 +  (*s_allowlist)["nxtscape.anthropic_api_key"] = settings_api::PrefType::kString;
 +  (*s_allowlist)["nxtscape.anthropic_model"] = settings_api::PrefType::kString;
 +  (*s_allowlist)["nxtscape.anthropic_base_url"] = settings_api::PrefType::kString;
@@ -84,6 +89,11 @@ index 9a00400829ae1..5a5b278252383 100644
 +  registry->RegisterStringPref("nxtscape.openai_api_key", "");
 +  registry->RegisterStringPref("nxtscape.openai_model", "gpt-4o");
 +  registry->RegisterStringPref("nxtscape.openai_base_url", "");
++
++  // Generic OpenAI provider settings
++  registry->RegisterStringPref("nxtscape.generic_openai_api_key", "");
++  registry->RegisterStringPref("nxtscape.generic_openai_base_url", "https://api.openai.com/v1");
++  registry->RegisterStringPref("nxtscape.generic_openai_model", "");
 +
 +  // Anthropic provider settings
 +  registry->RegisterStringPref("nxtscape.anthropic_api_key", "");
@@ -496,6 +506,7 @@ index 0000000000000..28e18b5f69f95
 +                on-change="onDefaultProviderChange_">
 +          <option value="nxtscape">BrowserOS</option>
 +          <option value="openai">OpenAI</option>
++          <option value="genericopenai">Generic OpenAI</option>
 +          <option value="anthropic">Anthropic</option>
 +          <option value="gemini">Gemini</option>
 +          <option value="ollama">Ollama</option>
@@ -599,6 +610,59 @@ index 0000000000000..28e18b5f69f95
 +              <option value="o3">o3</option>
 +            </select>
 +            <div class="form-helper">Select the OpenAI model to use for AI operations</div>
++          </div>
++        </div>
++      </div>
++
++      <!-- Generic OpenAI Card -->
++      <div class="provider-card" id="genericOpenAISection"
++           class$="[[getProviderCardClass_('genericopenai', prefs.nxtscape.default_provider.value)]]">
++        <div class="provider-card-header">
++          <div class="provider-card-icon">
++            <span>GO</span>
++          </div>
++          <div class="provider-card-info">
++            <h3 class="provider-card-name">Generic OpenAI</h3>
++            <div class="provider-card-status">
++              <span class="status-dot"></span>
++              <span>[[getProviderStatus_('genericopenai', prefs.nxtscape.default_provider.value)]]</span>
++            </div>
++          </div>
++        </div>
++        <div class="provider-card-content">
++          <div class="form-group">
++            <label class="form-label" for="genericOpenAIApiKey">API Key</label>
++            <input type="password"
++                   id="genericOpenAIApiKey"
++                   class="form-field"
++                   value="[[prefs.nxtscape.generic_openai_api_key.value]]"
++                   on-input="onGenericOpenAIApiKeyChange_"
++                   placeholder="Enter your API key"
++                   required>
++            <div class="form-helper">Your API key (required)</div>
++          </div>
++          <div class="form-group">
++            <label class="form-label" for="genericOpenAIBaseUrl">Base URL</label>
++            <input type="url"
++                   id="genericOpenAIBaseUrl"
++                   class="form-field"
++                   value="[[prefs.nxtscape.generic_openai_base_url.value]]"
++                   on-input="onGenericOpenAIBaseUrlChange_"
++                   placeholder="https://api.openai.com/v1">
++            <div class="form-helper">OpenAI-compatible API base URL</div>
++          </div>
++          <div class="form-group">
++            <label class="form-label" for="genericOpenAIModel">Model Name</label>
++            <input type="text"
++                   id="genericOpenAIModel"
++                   class="form-field"
++                   list="genericOpenAIModelList"
++                   value="[[prefs.nxtscape.generic_openai_model.value]]"
++                   on-input="onGenericOpenAIModelChange_"
++                   placeholder="e.g., gpt-4o">
++            <datalist id="genericOpenAIModelList"></datalist>
++            <div class="form-helper">Enter model name or list available models</div>
++            <cr-button class="action-button" on-click="onGenericOpenAIListModels_">List Models</cr-button>
 +          </div>
 +        </div>
 +      </div>
@@ -909,6 +973,77 @@ index 0000000000000..8c4421ef76e45
 +    this.setPrefValue('nxtscape.openai_base_url', value);
 +    this.showStatusMessage_();
 +  }
++  /**
++   * Handle Generic OpenAI API key change
++   */
++  private onGenericOpenAIApiKeyChange_(e: Event) {
++    const input = e.target as HTMLInputElement;
++    const value = input.value;
++    // Update the preference using PrefsMixin
++    // @ts-ignore: setPrefValue exists at runtime from PrefsMixin
++    this.setPrefValue('nxtscape.generic_openai_api_key', value);
++    this.showStatusMessage_();
++  }
++
++  /**
++   * Handle Generic OpenAI base URL change
++   */
++  private onGenericOpenAIBaseUrlChange_(e: Event) {
++    const input = e.target as HTMLInputElement;
++    const value = input.value;
++    // Update the preference using PrefsMixin
++    // @ts-ignore: setPrefValue exists at runtime from PrefsMixin
++    this.setPrefValue('nxtscape.generic_openai_base_url', value);
++    this.showStatusMessage_();
++  }
++
++  /**
++   * Handle Generic OpenAI model change
++   */
++  private onGenericOpenAIModelChange_(e: Event) {
++    const input = e.target as HTMLInputElement;
++    const value = input.value;
++    // Update the preference using PrefsMixin
++    // @ts-ignore: setPrefValue exists at runtime from PrefsMixin
++    this.setPrefValue('nxtscape.generic_openai_model', value);
++    this.showStatusMessage_();
++  }
++
++  /**
++   * Fetch and list available models for Generic OpenAI
++   */
++  private async onGenericOpenAIListModels_() {
++    const apiKey = this.prefs.nxtscape.generic_openai_api_key.value;
++    const baseUrl = (this.prefs.nxtscape.generic_openai_base_url.value || 'https://api.openai.com/v1').replace(/\/$/, '');
++    if (!apiKey) {
++      console.error('Missing API key');
++      return;
++    }
++    try {
++      const response = await fetch(`${baseUrl}/models`, {
++        headers: { 'Authorization': `Bearer ${apiKey}` },
++      });
++      if (!response.ok) {
++        throw new Error('Failed to fetch models');
++      }
++      const data = await response.json();
++      // @ts-ignore: shadowRoot exists at runtime
++      const datalist = this.shadowRoot!.querySelector('#genericOpenAIModelList');
++      if (datalist) {
++        datalist.innerHTML = '';
++        if (Array.isArray(data.data)) {
++          for (const model of data.data) {
++            const option = document.createElement('option');
++            option.value = model.id;
++            datalist.appendChild(option);
++          }
++        }
++      }
++    } catch (error) {
++      console.error(error);
++    }
++  }
++
 +
 +  /**
 +   * Handle Anthropic model selection change
